@@ -1,6 +1,6 @@
 This is an example of my (Chris) own prompt.
 
-[01;32m✓[37m ──(U:5 D:1 I:4)[0;31m Innovation#6 : AGM fixes. 
+[01;32m✓[37m ──(U:5 D:1 I:4)[0;31m Innovation#6 : AGM fixes.
 [1;37m┌[[01;35mBE: electriccloud-119543[1;37m]─([01;34mlarsonsh@larsonneur2[1;37m)─([1;34m <Current Date>[1;37m)─([0;32m~/src/cdk/[1;33mCDK-infra/[0;33mtools/bin[1;37m)─([0;33m[32magm[0m u=[1;37m)
 └─> [0m
 
@@ -10,10 +10,10 @@ type: PROMPT_COMMAND='RET=$?;AGM_check_update;__git_ps1 "$(if [[ $RET == 0 ]]; t
 type: # Line 1: Print out the current AGM.
 type: # Required to escape ansi color to be saved as is in the PS1 variable.
 type: AGM_PRPT_FOR_PS1=1
-type: 
+type:
 type: # PS1 prompt requires to encapsulate ANSI color code by \[ \] for prompt usage. So, no need to add it in format. Increase Readilibity.
 type: AGM_PRPT_ESC_PS1_COLOR=1
-type: 
+type:
 type: AGM_PRPT_FORMAT="%S%a%s%i\n"
 type: AGM_PRPT_STAT='\e[1;37m \342\224\200\342\224\200(%s)'
 type: AGM_PRPT_AGMID='\e[1;37m\342\224\200\342\224\200\e[0;31m %s :'
@@ -23,9 +23,9 @@ type: PROMPT_COMMAND="$PROMPT_COMMAND"'$(AGM_show)'
 type: # Line 2: Startup
 type: PROMPT_COMMAND="$PROMPT_COMMAND"'\[\e[1;37m\]\342\224\214'
 type: # Line 2: Print out more dedicated env print out
-type: if [ -x ~/sh/prompt_addons.sh ]
+type: if [ -x ~/bin/prompt_addons.sh ]
 type: then
-type:    PROMPT_COMMAND="$PROMPT_COMMAND\$(source ~/sh/prompt_addons.sh '[\[\e[01;35m\]' '\[\e[1;37m\]]\342\224\200')"
+type:    PROMPT_COMMAND="$PROMPT_COMMAND\$(source ~/bin/prompt_addons.sh '[\[\e[01;35m\]' '\[\e[1;37m\]]\342\224\200')"
 type: fi
 type: # Line 2: Print out User@Server + Date
 type: PROMPT_COMMAND="$PROMPT_COMMAND"'(\[\e[01;34m\]\u@\h\[\e[1;37m\])\342\224\200(\[\e[1;34m\]\@ \d\[\e[1;37m\])'
