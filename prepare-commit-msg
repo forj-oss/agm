@@ -1,0 +1,44 @@
+#!/bin/bash
+#
+# AGM hook to report current AGM defect or UserStory to the commit message.
+
+ if [ "$2" = "hook" ] && [ "$3" = "version" ]
+ then
+    echo "# AGM hook version|0.3e|" > "$1"
+    exit 
+ fi
+
+ if [ -r ~/bin/agm/agm.sh ]
+ then
+    export AGM_ID=""
+    # Loading agm.sh script. It loads automatically the correct AGM_ID, thanks to the name of the current branch.
+    source ~/bin/agm/agm.sh
+    echo "Selected AGM: $AGM_ID"
+
+    if [ "$AGM_ID" != "" ]
+    then
+       if [ "$(echo "$AGM_ID" | grep '^Innovation')" != "" ]
+       then
+          if [ "$(grep -ie "Innovation:" "$1")" = "" ]
+          then
+             echo "Creating message..."
+             cp -p "$1" "$1".bak
+             printf "Innovation: $AGM_Subject\n$(cat "$1".bak)" > "$1"
+             rm -f "$1".bak
+          fi
+       else
+          if [ "$(grep -ie "\(defect\|userstory\)#" "$1")" != "" ]
+          then
+             echo "Updating message..."
+             sed --in-place 's/\(defect\|userstory\)\#[0-9 ]*:/'"$AGM_ID"' :/gi' "$1"
+          else
+             echo "Creating message..."
+             cp -p "$1" "$1".bak
+             printf "$AGM_ID : $(cat "$1".bak)" > "$1"
+             rm -f "$1".bak
+          fi
+       fi
+    fi
+ fi
+
+# vim: syntax=sh
