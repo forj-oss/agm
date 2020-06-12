@@ -346,6 +346,11 @@ function AGM_check_update
  fi
 }
 
+function agm_awk_escape
+{
+   echo $1 | sed 's|/|\/|g'
+}
+
 function AGM_refresh
 {
  # This function loads some important AGM variables used for prompt and some functions.
@@ -391,7 +396,7 @@ function AGM_refresh
        unset CHECK_PATH AGM_PATH_SEARCH
     else # Search for AGM_ID from agm.repo data file
        AGM_CUR_REPO_BRANCH="$(echo "$AGM_CUR_REPO_BRANCH" | sed 's|/|\\/|g')"
-       AGM_ID_SEARCH="$(awk -F'|' '$1 ~ /^'"$AGM_CUR_REPO_NAME"'$/ && $3 ~ /^'"$AGM_CUR_REPO_BRANCH"'$/ { printf "%s\n",$2 }' $AGM_REPO  | head -n 1)"
+       AGM_ID_SEARCH="$(awk -F'|' '$1 ~ /^'"$AGM_CUR_REPO_NAME"'$/ && $3 ~ /^'"$(agm_awk_escape $AGM_CUR_REPO_BRANCH)"'$/ { printf "%s\n",$2 }' $AGM_REPO  | head -n 1)"
        if [ "$AGM_ID_SEARCH" = "" ]
        then
           AGM_ID_SEARCH="$(awk -F'|' '$1 ~ /^A$/ { printf "%s\n",$2 }' $AGM_REPO | head -n 1)"
