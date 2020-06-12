@@ -2,7 +2,7 @@
 
 AGM features + bash prompt facilities
 
-# To install it
+## To install it
 
 _Requirements_:
 
@@ -16,11 +16,12 @@ _Installation_:
     If your prompt were already updated, add --force
 
     ex:
-        ```bash
-        agm-configure --force
-        ```
 
-# My configuration
+    ```bash
+    agm-configure --force
+    ```
+
+## My configuration
 
 When I run those environment on my workstation, I'm setting several
 things.
@@ -30,7 +31,7 @@ things.
     Fedora:
 
     ```bash
-    $ sudo cp/usr/share/doc/git-core-doc/contrib/completion/git-prompt.sh
+    sudo cp/usr/share/doc/git-core-doc/contrib/completion/git-prompt.sh
     ```
 
     Ubuntu:
