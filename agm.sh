@@ -305,15 +305,16 @@ where
 - RelativePath          : Optional. agm-cd will change to the subdirectories of the selected repository."
        ;;
      agm-create)
-       echo "$1 [--attach] [--attach-all] <D|U|I> <AGM Number> <AGM Summary>
+       echo "$1 [--attach] [--attach-all] <D|U|I> <Number> <Summary> [Project]
 where:
 --attach     : To attach the new created AGM to the current repository.
 --attach-all : To attach the new created AGM to ALL repositories. I do not recommend it, but it is possible to do it. :-)
 <D|U|I>      : This is the type of AGM ID to create. D stands for Defect, U for UserStory and I for Innovative.
                An innovative artifact is not a work tracked by the AGM solution. 
                Use it if there is no AGM UserStory or Defect for the change you are doing. The Innovative number can be any number >=1
-<AGM Number> : This is the number of this AGM ID to create. 
+<Number>     : This is the number of this AGM ID to create. 
 <Summary>    : This is the short AGM description. Defect/UserStory list is kept in ~/.agm_db file. For a new defect/UserStory, this summary is required.
+<Project>    : For some cases, the real AGM ID is prefixed with the project ID. In that case, the string injected in git commit message will be <type> <project>-<Number>. Otherwise, it will be <type>#<Number>.
 
 NOTE: git commit won't add any Innovative#Number to the commit message. But the Summary prefixed by 'Innovation: ' is added to the commit message.
 
@@ -321,7 +322,7 @@ NOTE: There is currently no links to the AGM service. So, you need to maintain t
 
        ;;
      agm)
-       echo "$1 [--attach] [--attach-all] 
+       echo "$1 [--attach] [--attach-all]
 where:
 --attach     : To attach the new created AGM to the current repository.
 --attach-all : To attach the new created AGM to ALL repositories. I do not recommend it, but it is possible to do it. :-)
@@ -406,7 +407,7 @@ function AGM_refresh
     then
        if [ "$AGM_ID_SEARCH" != "$AGM_ID" ]
        then
-          AGM_load $AGM_ID_SEARCH
+          AGM_load "$AGM_ID_SEARCH"
        fi
        if [ "$AGM_ID" != "" ] 
        then
@@ -580,7 +581,7 @@ function AGM_load
  then
     AGM_Subject=""
  else
-    AGM_ID_Found="$(awk -F'|' '$1 ~ /'$1'/ { printf "%s\n",$1 }' $AGM_DB)"
+    AGM_ID_Found="$(awk -F'|' '$1 ~ /'"$1"'/ { printf "%s\n",$1 }' $AGM_DB)"
     if [ "$(echo "$AGM_ID_Found" | wc -w)" -gt 1 ]
     then
        echo "Warning! You have selected several AGM ID . You need to refine your request to select one only.
@@ -608,12 +609,12 @@ function agm-list
  AGM_DB=~/.agm_db
  if [ "$1" = "" ]
  then
-    awk -F'|' '{ printf("%s\t%s\n",$1,$2) }' $AGM_DB
+    awk -F'|' '{ printf("%-25s %s\n",$1,$2) }' $AGM_DB
     unset AGM_DB
     return
  fi
  echo "Getting information:"
- awk -F'|' '$1 ~ /'"$1"'/ { printf ("%s\t - %s\n",$1,$2) }' $AGM_DB
+ awk -F'|' '$1 ~ /'"$1"'/ { printf ("%-25s - %s\n",$1,$2) }' $AGM_DB
  printf "\nLinked to:\n"
  AGM_REPO=~/.agm.repo
  awk -F'|' '$2 ~ /'"$1"'/ { if ($3 != "")
@@ -888,8 +889,8 @@ function agm-done
  fi
  AGM_REPO_FILE=~/.agm.repo
  AGM_DB=~/.agm_db
- sed --in-place=.bak '/|'$AGM_ID'|/d' $AGM_REPO_FILE 
- sed --in-place=.bak '/'$AGM_ID'/d' $AGM_DB 
+ sed --in-place=.bak '/|'"$AGM_ID"'|/d' $AGM_REPO_FILE 
+ sed --in-place=.bak '/'"$AGM_ID"'/d' $AGM_DB 
  unset AGM_REPO_FILE AGM_DB
  if [ "$(echo "$AGM_ID" | grep '^Innovation')" = "" ]
  then
@@ -987,7 +988,7 @@ function agm-attach
  fi
  if [ "$1" != "" ]
  then
-    AGM_load $1
+    AGM_load "$1"
  fi
  AGM_REPO_FILE=~/.agm.repo
  if [ "$AGM_ID" != "" ]
@@ -1066,19 +1067,38 @@ function agm
        AGM_TYPES="Innovation"
     fi
  fi
+
+ echo "Optionally, provide the project ID:"
+ read AGM_PROJECT
+
  typeset -i AGM_NUM
  printf "\nProvide the $AGM_TYPES number: (empty to exit)\n"
- read -p "$AGM_TYPES#" AGM_NUM
+ if [[ "$AGM_PROJECT" != "" ]]
+ then
+   read -p "$AGM_TYPES#$AGM_PROJECT-" AGM_NUM
+ else
+   read -p "$AGM_TYPES#" AGM_NUM
+ fi
+
  if [ $AGM_NUM -eq 0 ]
  then
-      unset AGM_TYPE AGM_TYPES AGM_NUM AGM_REPO
-      AGM_refresh
-    return
+   unset AGM_TYPE AGM_TYPES AGM_NUM AGM_REPO
+   AGM_refresh
+   return
  fi
- AGM_load "$AGM_TYPES#$AGM_NUM"
- if [ "$AGM_ID" = "" ]
+ if [[ "$AGM_PROJECT" != "" ]]
  then
-    AGM_ID="$AGM_TYPES#$AGM_NUM"
+   AGM_load "$AGM_TYPES#$AGM_PROJECT-$AGM_NUM"
+   if [ "$AGM_ID" = "" ]
+   then
+      AGM_ID="$AGM_TYPES#$AGM_PROJECT-$AGM_NUM"
+   fi
+ else
+   AGM_load "$AGM_TYPES#$AGM_NUM"
+   if [ "$AGM_ID" = "" ]
+   then
+      AGM_ID="$AGM_TYPES#$AGM_NUM"
+   fi
  fi
  if [ "$AGM_TYPES" = Innovative ]
  then
@@ -1113,7 +1133,7 @@ Just press enter if you will attach it later.\n"
     done
  fi
 
- agm-create $AGM_ATTACH $AGM_TYPE $AGM_NUM "$AGM_Subject"
+ agm-create $AGM_ATTACH $AGM_TYPE $AGM_NUM "$AGM_Subject" "$AGM_PROJECT"
 
  unset AGM_ATTACH AGM_TYPE AGM_NUM AGM_Subject AGM_TYPES AGM_REPO
  AGM_refresh
@@ -1135,7 +1155,7 @@ function agm-create
  done
 
  typeset AGM_TYPE
- if [ $# -ne 3 ]
+ if [[ $# -lt 2 ]]
  then
     echo "Missing parameters."
     agm-help agm-create
@@ -1167,12 +1187,17 @@ function agm-create
     return 1
  fi
  AGM_TYPE=$AGM_TYPEN
- export AGM_ID="$AGM_TYPE#$2"
+ if [[ "$AGM_PROJECT" != "" ]]
+ then
+   export AGM_ID="$AGM_TYPE#$AGM_PROJECT-$2"
+ else
+   export AGM_ID="$AGM_TYPE#$2"
+fi
 
  AGM_Subject="$3"
 
  AGM_DB=~/.agm_db
- AGM_Subject_old="$(awk -F'|' '$1 ~ /^'$AGM_ID'$/ { printf "%s\n",$2 }' $AGM_DB)"
+ AGM_Subject_old="$(awk -F'|' '$1 ~ /^'"$AGM_ID"'$/ { printf "%s\n",$2 }' $AGM_DB)"
  if [ "$AGM_ID" != "" ] && [ "$AGM_Subject" != "$AGM_Subject_old" ]
  then
     echo "Saving summary for ${AGM_ID}."
