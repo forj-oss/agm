@@ -43,7 +43,7 @@ function  AGM_check_agm
 
 function AGM_version
 {
-echo "0.3e"
+echo "0.3f"
 }
 
 function agm-setup
