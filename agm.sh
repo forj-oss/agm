@@ -16,66 +16,86 @@
 # Script to source
 #
 #
-
+AGM_INSTALLED=~/bin/agm
+AGM_TRIGGER=$AGM_INSTALLED/agm.d
+AGM_SCRIPT=agm.sh
+AGM_TOOL=$AGM_INSTALLED/$AGM_SCRIPT
+AGM_MODULE_VERSION="$(cat $AGM_INSTALLED/agm.version 2>/dev/null)"
 
 function  AGM_check_agm
 {
  MSG=""
- if [ -f ~/bin/agm/.origin.dat ]
+ if [ -f $AGM_INSTALLED/.origin.dat ]
  then
-    FORIGIN="$(cat ~/bin/agm/.origin.dat)"
+    FORIGIN="$(cat $AGM_INSTALLED/.origin.dat)"
     if [ ! -f $FORIGIN ]
     then
-       rm -f ~/bin/agm/.origin.dat
+       rm -f $AGM_INSTALLED/.origin.dat
     else
-       if [ "$(cat ~/bin/agm/agm.sh | md5sum)" != "$(cat $FORIGIN| md5sum)" ]
+       if [ "$(cat $AGM_TOOL | md5sum)" != "$(cat $FORIGIN| md5sum)" ]
        then
-          MSG="A different version ($FORIGIN) of your agm.sh copy is found. You may need to install it with: $FORIGIN setup ; source ~/bin/agm/agm.sh"
+          MSG="A different version ($FORIGIN) of your $AGM_SCRIPT copy is found. You may need to install it with: $FORIGIN setup ; agm-update"
           return
        fi
     fi
  fi
- if [ "$AGM_MD5" != "$(cat ~/bin/agm/agm.sh | md5sum)" ]
+ if [ "$AGM_MD5" != "$(cat $AGM_TOOL | md5sum)" ]
  then
-    MSG="please, reload agm with 'source ~/bin/agm/agm.sh'. "
+    MSG="please, reload agm with 'agm-update'. "
  fi
 }
 
-function AGM_version
+function agm-version
 {
-echo "0.3f"
+printf "$AGM_MODULE_VERSION"
+if [[ -f $AGM_INSTALLED/agm.version ]]
+then
+   if [[ "$(cat $AGM_INSTALLED/agm.version)" != "$AGM_MODULE_VERSION" ]]
+   then
+      printf " \e[1;33m(please load version ($AGM_INSTALLED/agm.version) with 'agm-update'\e[0m"
+   fi
+fi
+printf "\n"
+}
+
+function agm-update
+{
+   if [[ $AGM_MODULE_VERSION != "$(cat $AGM_INSTALLED/agm.version)" ]]
+   then
+      source $AGM_TOOL
+   fi
 }
 
 function agm-setup
 {
- if [ -f ~/bin/agm/prepare-commit-msg ]
+ if [ -f $AGM_INSTALLED/prepare-commit-msg ]
  then
-    AGM_VER_FOUND="$(awk -F'|' '$1 ~ /version$/ { printf "%s\n",$2 }' ~/bin/agm/prepare-commit-msg)"
-    if [ "$(AGM_version)" != "$AGM_VER_FOUND" ]
+    AGM_VER_FOUND="$(awk -F'|' '$1 ~ /version$/ { printf "%s\n",$2 }' $AGM_INSTALLED/prepare-commit-msg)"
+    if [ "$AGM_MODULE_VERSION" != "$AGM_VER_FOUND" ]
     then
-       rm -f ~/bin/agm/prepare-commit-msg
-       echo "~/bin/agm/prepare-commit-msg out of date. Need to be updated."
+       rm -f $AGM_INSTALLED/prepare-commit-msg
+       echo "$AGM_INSTALLED/prepare-commit-msg out of date. Need to be updated."
     fi
  fi
- if [ ! -f ~/bin/agm/prepare-commit-msg ]
+ if [ ! -f $AGM_INSTALLED/prepare-commit-msg ]
  then
-    mkdir -p ~/bin/agm
-    cat > ~/bin/agm/prepare-commit-msg << __END 
+    mkdir -p $AGM_INSTALLED
+    cat > $AGM_INSTALLED/prepare-commit-msg << __END 
 #!/bin/bash
 #
 # AGM hook to report current AGM defect or UserStory to the commit message.
 
  if [ "\$2" = "hook" ] && [ "\$3" = "version" ]
  then
-    echo "# AGM hook version|$(AGM_version)|" > "\$1"
+    echo "# AGM hook version|$AGM_MODULE_VERSION|" > "\$1"
     exit 
  fi
 
- if [ -r ~/bin/agm/agm.sh ]
+ if [ -r $AGM_TOOL ]
  then
     export AGM_ID=""
-    # Loading agm.sh script. It loads automatically the correct AGM_ID, thanks to the name of the current branch.
-    source ~/bin/agm/agm.sh
+    # Loading $AGM_SCRIPT script. It loads automatically the correct AGM_ID, thanks to the name of the current branch.
+    source $AGM_TOOL
     echo "Selected AGM: \$AGM_ID"
 
     if [ "\$AGM_ID" != "" ]
@@ -106,8 +126,8 @@ function agm-setup
 
 # vim: syntax=sh
 __END
-   chmod +x ~/bin/agm/prepare-commit-msg
-   echo "installed central ~/bin/agm/prepare-commit-msg"
+   chmod +x $AGM_INSTALLED/prepare-commit-msg
+   echo "installed central $AGM_INSTALLED/prepare-commit-msg"
  fi
 
  if [ "$AGM_CUR_REPO_PATH" != "" ]
@@ -117,14 +137,14 @@ __END
        if [ "$(grep "AGM hook version" "$AGM_CUR_REPO_PATH/.git/hooks/prepare-commit-msg")" != "" ]
        then
           rm -f $AGM_CUR_REPO_PATH/.git/hooks/prepare-commit-msg
-          ln -sf ~/bin/agm/prepare-commit-msg $AGM_CUR_REPO_PATH/.git/hooks
+          ln -sf $AGM_INSTALLED/prepare-commit-msg $AGM_CUR_REPO_PATH/.git/hooks
           echo "AGM git hook re-installed."
        else
           echo "Oops... there is another prepare-commit-msg hook in place. You have to edit it, and add this line in front of any code:
-~/bin/agm/prepare-commit-msg \"\$1\" \"\$2\" \"\$3\" "
+$AGM_INSTALLED/prepare-commit-msg \"\$1\" \"\$2\" \"\$3\" "
        fi
     else
-       ln -sf ~/bin/agm/prepare-commit-msg $AGM_CUR_REPO_PATH/.git/hooks
+       ln -sf $AGM_INSTALLED/prepare-commit-msg $AGM_CUR_REPO_PATH/.git/hooks
        echo "AGM git hook installed."
     fi
  else
@@ -159,7 +179,7 @@ First, review the list and then select the right one.
 Press Enter to continue.
 "
  read
- eval "find ~/bin/agm/ -name \*.prpt $EXCLUDE" | while read PRPT_FILE
+ eval "find $AGM_INSTALLED/ -name \*.prpt $EXCLUDE" | while read PRPT_FILE
  do
     FILE="$(echo $PRPT_FILE | sed 's|^.*/bin/agm/\(.*\)\.prpt|\1|g')"
     echo "
@@ -170,7 +190,7 @@ $PRPT_FILE
  done | more
  echo "---------------------------------------------------------------------------------------"
 
- select PRPT in $(eval "find ~/bin/agm/ -name \*.prpt $EXCLUDE") exit
+ select PRPT in $(eval "find $AGM_INSTALLED/ -name \*.prpt $EXCLUDE") exit
  do
     if [ "$PRPT" != "exit" ] 
     then
@@ -228,6 +248,7 @@ agm-detach             : To detach the attached AGM ID of the current repository
 agm-done [<Number>]    : To close the current or another opened AGM ID.
 agm-list [<Number>]    : To get list of active AGM ID or get detail on an AGM ID.
 agm-cd <options>       : To move to another tracked branched repository.
+agm-update             : Reload agm tool in your shell if AGM version has been updated.
 cd :<options>          : alias to agm-cd features.
 agm-pushd <options>    : like cd, but uses 'bash' pushd/popd.
 pushd :<options>       : alias to agm-pushd features.
@@ -340,11 +361,15 @@ If you want to create an agm directly without interaction, uses agm-create. Type
 
 function AGM_check_update
 {
- CUR_REPO_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
- if [ "$CUR_REPO_BRANCH" != "$AGM_CUR_REPO_BRANCH" ]
- then
-    AGM_refresh
- fi
+   CUR_REPO_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+   if [ "$CUR_REPO_BRANCH" != "$AGM_CUR_REPO_BRANCH" ]
+   then
+      AGM_refresh
+   fi
+   for i in $AGM_TRIGGER/check_update/post/*.sh
+   do
+      source $i
+   done
 }
 
 function agm_awk_escape
@@ -444,7 +469,7 @@ function AGM_check_repo
           then
              echo "GIT hook for AGM is not installed. To get power on call agm-setup to install it."
           else
-             if [ "$(AGM_version)" != "$AGM_VER_FOUND" ]
+             if [ "$AGM_MODULE_VERSION" != "$AGM_VER_FOUND" ]
              then
                 echo "GIT hook for AGM is not updated. Please call agm-setup to update it." 
              fi
@@ -1226,27 +1251,33 @@ function AGM_copy_files
  then
     return
  fi
- install -m 755 $SCRIPT ~/bin/agm/
+ install -m 755 $SCRIPT $AGM_INSTALLED/
+
  cd $(dirname $SCRIPT)
- install -m 644 -t ~/bin/agm/ *.prpt
+ install -m 644 -t $AGM_INSTALLED/ agm.version
+ install -m 644 -t $AGM_INSTALLED/ *.prpt
+
  if [ "$1" = "only-prpt" ] || [ "$1" = "" ]
  then
     ls */*.prpt | sed 's|/.*\.prpt||g' | sort -u | while read DEST
     do
-       install -d -m 755 ~/bin/agm/$DEST 
-       install -m 644 -t ~/bin/agm/$DEST $DEST/*.prpt
+       install -d -m 755 $AGM_INSTALLED/$DEST 
+       install -m 644 -t $AGM_INSTALLED/$DEST $DEST/*.prpt
     done
  fi
 }
 
-if [ "$(basename -- $0)" != "agm.sh" ]
+###### MAIN Part
+
+if [ "$(basename -- $0)" != "$AGM_SCRIPT" ]
 then
-   export AGM_MD5=$(cat ~/bin/agm/agm.sh | md5sum)
+   export AGM_MD5=$(cat $AGM_TOOL | md5sum)
    alias cd=agm_alias_cd
    alias pushd=agm_alias_pushd
    alias popd=agm_alias_popd
 
    AGM_refresh
+   echo "AGM Version loaded: $AGM_MODULE_VERSION"
 else
    if [ $# -eq 0 ] 
    then
@@ -1255,48 +1286,53 @@ else
    fi
    case "$1" in
       setup)
-        SCRIPT=$0
-        if [ ! -d ~/bin/agm ]
-        then
-           echo "Installing bash agm functions"
-           mkdir -p ~/bin/agm
-           echo "#AGM function
-source ~/bin/agm/agm.sh" >> ~/.bashrc
-           AGM_copy_files
-           echo "agm.sh has been installed. your .bash_profile has been updated to load agm.sh, at each login. To load agm in your current bash shell, type '[1msource ~/bin/agm/agm.sh[0m'"
-        else
-           if [ "$(cat $0 | md5sum)" != "$(cat ~/bin/agm/agm.sh | md5sum)" ]
-           then
-              echo "Updating bash agm functions"
-              AGM_copy_files
-              echo "agm.sh has been updated. Refresh your bash environment, with '[1msource ~/bin/agm/agm.sh[0m'"
-           else
-              AGM_copy_files only-prpt
-              echo "agm functions already up to date."
-           fi
-        fi
-        AGM_REPO=~/.agm.repo
-        if [ ! -f $AGM_REPO ]
-        then
-           touch $AGM_REPO
-        fi
-        AGM_DB=~/.agm_db
-        if [ ! -f $AGM_DB ]
-        then
-           touch $AGM_DB
-        fi
-        unset AGM_REPO AGM_DB
+         SCRIPT=$0
+         AGM_MODULE_VERSION="$(cat $(dirname $SCRIPT)/agm.version)"
+         if [ ! -d $AGM_INSTALLED ]
+         then
+            echo "Installing bash agm functions $AGM_MODULE_VERSION..."
+            mkdir -p $AGM_INSTALLED
+            if [[ "$(fgrep 's/'"$AGM_SCRIPT"'/' ~/.bashrc)" = "" ]]
+            then
+               printf "#AGM function\nsource $AGM_TOOL\n" >> ~/.bashrc
+               printf "Your .bashrc has been updated to load $AGM_SCRIPT, at each login. To load agm in your current bash shell, type '\e[1msource $AGM_TOOL\e[0m'\n"
+            fi
+            AGM_copy_files
+            echo "$AGM_SCRIPT has been installed. "
+         else
+            if [ "$(cat $0 | md5sum)" != "$(cat $AGM_TOOL | md5sum)" ]
+            then
+               echo "Updating bash agm functions $AGM_MODULE_VERSION..."
+               AGM_copy_files
+               echo "$AGM_SCRIPT has been updated. Refresh your bash environment, with '[1msource $AGM_TOOL[0m'"
+            else
+               AGM_copy_files only-prpt
+               echo "agm functions already up to date."
+            fi
+         fi
+         AGM_REPO=~/.agm.repo
+         if [ ! -f $AGM_REPO ]
+         then
+            touch $AGM_REPO
+         fi
+         AGM_DB=~/.agm_db
+         if [ ! -f $AGM_DB ]
+         then
+            touch $AGM_DB
+         fi
+         unset AGM_REPO AGM_DB
 
-        AGM_refresh
-        agm-setup
-        echo "$(cd $(dirname "$SCRIPT") ; pwd)/$(basename "$SCRIPT")" > ~/bin/agm/.origin.dat
-        agm-help agm-configure
-        ;;
+         AGM_refresh
+         agm-setup
+         echo "$(cd $(dirname "$SCRIPT") ; pwd)/$(basename "$SCRIPT")" > $AGM_INSTALLED/.origin.dat
+         agm-help agm-configure
+         ;;
       version)
-        AGM_version
-        ;;
+         agm-version
+         ;;
       *)
-        echo "To install/update AGM function for bash, call '$0 setup'. Exiting."
-        ;;
+         echo "To install/update AGM function for bash, call '$0 setup'. Exiting."
+         ;;
    esac
 fi
+
