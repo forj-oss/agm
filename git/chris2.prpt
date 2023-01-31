@@ -6,7 +6,7 @@ This is an example of my (Chris) own prompt.
 
 type: export GIT_PS1_SHOWDIRTYSTATE=1 GIT_PS1_SHOWSTASHSTATE=1 GIT_PS1_SHOWUNTRACKEDFILES=1 GIT_PS1_SHOWCOLORHINTS=1 GIT_PS1_SHOWUPSTREAM=verbose
 type: # Line 1: Print out the previous command status
-type: PROMPT_COMMAND='RET=$?;AGM_check_update;__git_ps1 "$(if [[ $RET == 0 ]]; then echo "\[\e[01;32m\]\342\234\223"; else echo "\[\e[01;31m\]\342\234\227 $RET"; fi)'
+type: PROMPT_COMMAND='RET=$?;agm-update;AGM_check_update;__git_ps1 "$(if [[ $RET == 0 ]]; then echo "\[\e[01;32m\]\342\234\223"; else echo "\[\e[01;31m\]\342\234\227 $RET"; fi)'
 type: # Line 1: Print out the current AGM.
 type: # Required to escape ansi color to be saved as is in the PS1 variable.
 type: AGM_PRPT_FOR_PS1=1
